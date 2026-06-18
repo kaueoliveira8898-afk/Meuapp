@@ -61,5 +61,78 @@ button {
 </div>
 
 <script type="module">
-import { initializeApp } from "
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { getAuth, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
+const firebaseConfig = {
+    apiKey: "AIzaSyDufE2svFYjdFvGAYhZkKgH8uyYdHDj8xM",
+    authDomain: "meuapplogim.firebaseapp.com",
+    projectId: "meuapplogim",
+    storageBucket: "meuapplogim.firebasestorage.app",
+    messagingSenderId: "510256757580",
+    appId: "1:510256757580:web:12b86d9b72a34d5a4c2de9"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+async function fazerLogin() {
+    const emailInput = document.getElementById('email').value.trim();
+    const erroDiv = document.getElementById('erro');
+    const regexGmail = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+
+    if (emailInput === "") {
+        erroDiv.innerText = "Por favor, digite seu e-mail.";
+        erroDiv.style.display = "block";
+        return;
+    }
+
+    if (!regexGmail.test(emailInput)) {
+        erroDiv.innerText = "Por favor, insira um e-mail válido do Gmail.";
+        erroDiv.style.display = "block";
+        return;
+    }
+
+    const actionCodeSettings = {
+        url: window.location.href, // Faz retornar exatamente para o mesmo link onde o site está rodando
+        handleCodeInApp: true,
+    };
+
+    try {
+        await sendSignInLinkToEmail(auth, emailInput, actionCodeSettings);
+        window.localStorage.setItem('emailForSignIn', emailInput);
+        
+        document.getElementById('fluxoLogin').style.display = "none";
+        document.getElementById('fluxoCodigo').style.display = "block";
+        document.getElementById('emailDestino').innerText = emailInput;
+        erroDiv.style.display = "none";
+    } catch (error) {
+        erroDiv.innerText = "Erro do Firebase: " + error.message;
+        erroDiv.style.display = "block";
+    }
+}
+
+async function verificarRetornoDoEmail() {
+    const loginBox = document.getElementById('loginBox');
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+        let email = window.localStorage.getItem('emailForSignIn');
+        if (!email) {
+            email = window.prompt('Confirme o seu e-mail do Gmail para acessar:');
+        }
+        try {
+            await signInWithEmailLink(auth, email, window.location.href);
+            window.localStorage.removeItem('emailForSignIn');
+            loginBox.innerHTML = `
+                <h2 style="color: #34c759;">Acesso Liberado!</h2>
+                <p>Parabéns, seu e-mail foi validado com sucesso.</p>
+                <p style="color: gray; font-size: 14px;">Logado como: <strong>${email}</strong></p>
+            `;
+        } catch (error) {
+            alert("Erro ao confirmar o link: " + error.message);
+        }
+    }
+}
+
+document.getElementById('btnEnviar').addEventListener('click', fazerLogin);
+verificarRetornoDoEmail();
+</script>
